@@ -158,10 +158,3 @@ sensor in `pv_limiter_control.yaml`) that drives PV2 auto-detection.
 9. `cfg_threshold_high`
 10. `pv_log_buffer`
 11. `pv2_present` (true when the PV2 package is detected)
-
-## Dashboad yaml
-1. [[`dashboard.yaml`](https://github.com/coderubbere/HA-PV-Limiter/blob/main/home%20assistant/dashboard.yaml)](https://github.com/coderubbere/PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv1.yaml)
-
-## PV Modbus TCP yaml
-1. ['modbus_tcp_pv1.yaml'](https://github.com/coderubbere/HA-PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv1.yaml)
-2. ['modbus_tcp_pv2.yaml'](https://github.com/coderubbere/HA-PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv2.yaml)
