@@ -1,0 +1,271 @@
+## PV inverter logging modbus TCP/IP
+#
+# Revision: v1.0 2026/06/16
+
+modbus:
+  - name: PV1
+    type: tcp 
+    host: 10.10.30.223 ## or create !secret inverter_ip with ip adress
+    port: 502 
+    delay: 5
+    message_wait_milliseconds: 600
+    timeout: 5
+
+    sensors:
+      - name: PV1 Actual
+        unique_id: pv1_actual
+        unit_of_measurement: W
+        slave: 3
+        address: 30775
+        input_type: input
+        data_type: int32
+        min_value: 0
+        device_class: power
+        state_class: measurement
+      - name: PV1 Daily
+        unique_id: pv1_daily
+        unit_of_measurement: kWh
+        scale: 0.001
+        precision: 2
+        slave: 3
+        address: 30517
+        data_type: int64
+        min_value: 0
+        device_class: energy
+        state_class: total_increasing
+      - name: PV1 Total
+        unique_id: pv1_total
+        unit_of_measurement: kWh
+        slave: 3
+        address: 30531
+        input_type: input
+        scale: 0.001
+        precision: 2
+        data_type: int32
+        min_value: 0
+        device_class: energy
+        state_class: total_increasing
+      - name: PV1 AC Voltage
+        unique_id: pv1_ac_voltage
+        unit_of_measurement: V
+        slave: 3
+        address: 30783
+        input_type: input
+        scale: 0.01
+        precision: 2
+        data_type: int32
+        min_value: 0
+        device_class: voltage
+        state_class: measurement
+      - name: PV1 AC Frequency
+        unique_id: pv1_ac_frequency
+        unit_of_measurement: Hz
+        slave: 3
+        address: 30803
+        input_type: input
+        scale: 0.01
+        precision: 2
+        data_type: int32
+        min_value: 0
+        device_class: frequency
+        state_class: measurement
+      - name: PV1 DC Voltage 1
+        unique_id: pv1_dc_voltage_1
+        unit_of_measurement: V
+        slave: 3
+        address: 30771
+        input_type: input
+        scale: 0.01
+        precision: 1
+        data_type: int32
+        min_value: 0
+        device_class: voltage
+        state_class: measurement
+      - name: PV1 DC Current 1
+        unique_id: pv1_dc_current_1
+        unit_of_measurement: A
+        slave: 3
+        address: 30769
+        input_type: input
+        scale: 0.001
+        precision: 2
+        data_type: int32
+        min_value: 0
+        device_class: current
+        state_class: measurement
+      - name: PV1 DC Power 1
+        unique_id: pv1_dc_power_1
+        unit_of_measurement: W
+        slave: 3
+        address: 30773
+        input_type: input
+        data_type: int32
+        min_value: 0
+        device_class: power
+        state_class: measurement
+      - name: PV1 DC Voltage 2
+        unique_id: pv1_dc_voltage_2
+        unit_of_measurement: V
+        slave: 3
+        address: 30959
+        input_type: input
+        scale: 0.01
+        precision: 1
+        data_type: int32
+        min_value: 0
+        device_class: voltage
+        state_class: measurement
+      - name: PV1 DC Current 2
+        unique_id: pv1_dc_current_2
+        unit_of_measurement: A
+        slave: 3
+        address: 30957
+        input_type: input
+        scale: 0.001
+        precision: 2
+        data_type: int32
+        min_value: 0
+        device_class: current
+        state_class: measurement
+      - name: PV1 DC Power 2
+        unique_id: pv1_dc_power_2
+        unit_of_measurement: W
+        slave: 3
+        address: 30961
+        input_type: input
+        data_type: int32
+        min_value: 0
+        device_class: power
+        state_class: measurement
+      - name: PV1 temperature
+        unique_id: pv1_temperature
+        unit_of_measurement: °C
+        slave: 3
+        address: 30953
+        input_type: input
+        scale: 0.1
+        precision: 1
+        data_type: int32
+        min_value: 0
+        device_class: temperature
+        state_class: measurement
+      - name: PV1 isolatieweerstand
+        unique_id: pv1_isolatieweerstand
+        unit_of_measurement: Ohm
+        slave: 3
+        address: 30225
+        input_type: input
+        scale: 0.001
+        precision: 0
+        data_type: int32
+        min_value: 0
+##        device_class: resistance
+        state_class: measurement
+      - name: PV1 aardlekkage
+        unique_id: pv1_aardlekkage
+        unit_of_measurement: A
+        slave: 3
+        address: 31247
+        input_type: input
+        scale: 0.001
+        precision: 3
+        data_type: int32
+        min_value: 0
+        device_class: current
+        state_class: measurement
+      - name: PV1 status
+        unique_id: pv1_status
+        slave: 3
+        address: 30201
+        data_type: int32
+      - name: PV1 grid
+        unique_id: pv1_grid
+        slave: 3
+        address: 30217
+        data_type: uint32
+      - name: PV1 limit percent
+        unique_id: pv1_limit_percent
+        unit_of_measurement: "%"
+        slave: 3
+        address: 41255
+        input_type: holding
+        data_type: int16
+        min_value: 0
+        scale: 0.01
+        precision: 0
+        state_class: measurement
+
+sensor:
+  - platform: template
+    sensors:
+      pv_power:      
+        friendly_name: 'PV1 Power'
+        value_template: >-
+            {% if states('sensor.pv1_actual')|float < 0 or states('sensor.pv1_actual')|float > 10000 %}
+              0
+            {% else %}
+              {{ states('sensor.pv1_actual') }}
+            {% endif %}
+        unit_of_measurement: "W"
+        icon_template: mdi:flash
+        unique_id: pv1_power
+ 
+    sensors:
+      pv_energie_vandaag:      
+        friendly_name: 'PV1 Energy Daily'
+        value_template: >
+            {% if states('sensor.pv1_daily')|float < 0 or states('sensor.pv1_vandaag')|float > 10000 %}
+              0
+            {% else %}
+              {{ states('sensor.pv1_daily') }}
+            {% endif %}
+        unit_of_measurement: "kWh"
+        icon_template: mdi:weather-sunny
+        unique_id: pv1_energie_vandaag
+
+    sensors:
+      pv_grid_contactor:        
+        friendly_name: 'PV1 Grid relais'
+        value_template: >-
+            {% if is_state('sensor.pv1_grid', '51' ) %}
+              Closed
+            {% else %}
+              Open
+            {% endif %}
+        icon_template: mdi:connection
+        unique_id: pv1_grid_connector
+
+template:
+  - number:
+      - name: PV1 Power Limit Slider
+        unique_id: pv1_power_limit_slider
+        icon: mdi:tune-variant
+        unit_of_measurement: "%"
+        state: 100
+        set_value:
+          - service: modbus.write_register
+            data:
+              hub: PV1
+              address: 40016
+              slave: 3
+              value: "{{ value | int }}"
+        step: 1
+        min: 0
+        max: 100
+        optimistic: true
+        
+  - sensor:
+      - name: "PV1 Inverter Status"
+        unique_id: pv1_inverter_status
+        state: >-
+          {% if is_state('sensor.pv2_status', '307') %}
+            OK
+          {% elif is_state('sensor.pv2_status', '303') %}
+            Off
+          {% elif is_state('sensor.pv2_status', '455') %}
+            Warning
+          {% elif is_state('sensor.pv2_status', '35') %}
+            Fault
+          {% else %}
+            Unknown
+          {% endif %}

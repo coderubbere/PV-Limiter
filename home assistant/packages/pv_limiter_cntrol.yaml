@@ -1,0 +1,233 @@
+# yaml-language-server: $schema=http://schemas.home-assistant.io/configuration
+# This file contains the core entities of the PV Limiter.
+# It should be included in the main configuration.yaml file as a `package` via `!include_dir_named` https://www.home-assistant.io/docs/configuration/packages/.
+# v1.0 - 2026/06/16
+# Optimize stop and go behavior
+input_number:
+  pv_step_size:
+    name: "PV Step Size"
+    min: 1
+    max: 25
+    initial: 1
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:debug-step-over
+
+  pv_p1_deadband:
+    name: "Dead Band"
+    min: 0
+    max: 500
+    step: 5
+    unit_of_measurement: "W"
+    mode: box
+    icon: mdi:numeric
+
+# PV Output Tresholds
+  pv_price_threshold_low:
+    name: "0% below"
+    min: -1
+    max: 1
+    initial: -0.14
+    step: 0.01
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:speedometer-slow
+
+  pv_price_threshold_high:
+    name: "100% above"
+    min: -1
+    max: 1
+    initial: 0
+    step: 0.01
+    unit_of_measurement: "€/kWh"
+    mode: box
+    icon: mdi:speedometer
+
+# Detect whether the PV2 modbus package file is present.
+# Adjust the path below if your package folder differs from /config/packages.
+command_line:
+  - binary_sensor:
+      name: "PV2 Config Present"
+      unique_id: pv2_config_present
+      command: 'test -f /config/packages/modbus_tcp_pv2.yaml && echo ON || echo OFF'
+      payload_on: "ON"
+      payload_off: "OFF"
+
+# PV Booleans
+input_boolean:
+  pv_limiter:
+    name: "PV Limiter"
+    icon: mdi:toggle
+
+# PV Limiter flow version (published from Node-RED as a retained MQTT message).
+# Retained -> the broker replays the value the instant HA reconnects, so the
+# sensor is available immediately after a restart (no /api/states gap).
+mqtt:
+  sensor:
+    - name: "PV Limiter Version"
+      unique_id: pv_limiter_version
+      state_topic: "pv_limiter/version"
+      icon: mdi:tag-outline
+
+# When the PV2 modbus package is present (binary_sensor.pv2_config_present = on)
+# the value is pv1_power + pv2_power; otherwise it is pv1_power only.
+template:
+  - sensor:
+      - name: "PV Limiter Power"
+        unique_id: pv_limiter_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        availability: >
+          {{ has_value('sensor.pv1_actual') }}
+        state: >
+          {% if is_state('binary_sensor.pv2_config_present', 'on') %}
+          {{ ((states('sensor.pv1_actual') | float(0))
+            + (states('sensor.pv2_actual') | float(0))) | round(0) }}
+          {% else %}
+            {{ states('sensor.pv1_actual') | float(0) | round(0) }}
+          {% endif %}
+
+  - sensor:
+      - name: "PV Limiter Power Max"
+        unique_id: pv_limiter_power_max
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        availability: >
+          {{ has_value('sensor.pv1_actual') }}
+        state: >
+          {% if is_state('binary_sensor.pv2_config_present', 'on') %}
+            {{ (states('sensor.pv1_power_max') | float(0)
+              + states('sensor.pv2_power_max') | float(0)) | round(0) }}
+          {% else %}
+            {{ states('sensor.pv1_power_max') | float(0) | round(0) }}
+          {% endif %}
+
+      - name: "PV Limiter Daily Yield"
+        unique_id: pv_limiter_daily_yield
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        availability: >
+          {{ has_value('sensor.pv1_daily') }}
+        state: >
+          {% if is_state('binary_sensor.pv2_config_present', 'on') %}
+            {{ ((states('sensor.pv1_daily') | float(0))
+               + (states('sensor.pv2_daily') | float(0))) | round(2) }}
+          {% else %}
+            {{ states('sensor.pv1_daily') | float(0) | round(2) }}
+          {% endif %}
+
+      - name: "PV Limiter Total Yield"
+        unique_id: pv_limiter_total_yield
+        unit_of_measurement: "MWh"
+        device_class: energy
+        state_class: total_increasing
+        availability: >
+          {{ has_value('sensor.pv1_total') }}
+        state: >
+          {% if is_state('binary_sensor.pv2_config_present', 'on') %}
+            {{ ((states('sensor.pv1_total') | float(0))
+               + (states('sensor.pv2_total') | float(0))) | round(1) }}
+          {% else %}
+            {{ states('sensor.pv1_total') | float(0) | round(1) }}
+          {% endif %}
+
+      - name: "PV Limiter PV1 Percentage"
+        unique_id: pv_limiter_pv1_percentage
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >
+            {% set power = states('sensor.pv1_actual') | float(0) %}
+            {% set max_w = 2835 %}
+            {% set percentage = (power / max_w) * 100 %}
+            {{ percentage | round(1) }}
+
+      - name: "PV Limiter PV2 Percentage"
+        unique_id: pv_limiter_pv2_percentage
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >
+            {% set power = states('sensor.pv2_actual') | float(0) %}
+            {% set max_w = 2835 %}
+            {% set percentage = (power / max_w) * 100 %}
+            {{ percentage | round(1) }}
+
+      - name: "PV Limiter Percentage"
+        unique_id: pv_limiter_percentage
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >
+            {{ has_value('sensor.pv_limiter_power') }}
+        state: >
+            {% set power = states('sensor.pv_limiter_power') | float(0) %}
+            {% set max_w = 5760 if is_state('binary_sensor.pv2_config_present', 'on') else 2835 %}
+            {{ (power / max_w * 100) | round(1) if max_w > 0 else 0 }}
+
+      - name: "PV Limiter Slider"
+        unique_id: pv_limiter_slider
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >
+            {% if is_state('binary_sensor.pv2_config_present', 'on') %}
+            {{ has_value('number.pv1_power_limit_slider')
+                and has_value('number.pv2_power_limit_slider') }}
+            {% else %}
+            {{ has_value('number.pv1_power_limit_slider') }}
+            {% endif %}
+        state: >
+            {% if is_state('binary_sensor.pv2_config_present', 'on') %}
+            {% set values = [
+                states('number.pv1_power_limit_slider') | float(0),
+                states('number.pv2_power_limit_slider') | float(0)
+            ] %}
+            {{ ((values | sum) / (values | count)) | round(1) }}
+            {% else %}
+                {{ states('number.pv1_power_limit_slider') | float(0) | round(1) }}
+            {% endif %}
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.pv1_actual
+        id: update
+      - platform: time
+        at: "00:00:00"
+        id: reset
+    sensor:
+      - name: "PV1 Power Max"
+        unique_id: pv1_power_max
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% if trigger.id == 'reset' %}
+            0
+          {% else %}
+            {% set current = states('sensor.pv1_actual') | float(0) %}
+            {% set previous = this.state | float(0) %}
+            {{ [current, previous] | max | round(0) }}
+          {% endif %}
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.pv2_actual
+        id: update
+      - platform: time
+        at: "00:00:00"
+        id: reset
+    sensor:
+      - name: "PV2 Power Max"
+        unique_id: pv2_power_max
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% if trigger.id == 'reset' %}
+            0
+          {% else %}
+            {% set current = states('sensor.pv2_actual') | float(0) %}
+            {% set previous = this.state | float(0) %}
+            {{ [current, previous] | max | round(0) }}
+          {% endif %}

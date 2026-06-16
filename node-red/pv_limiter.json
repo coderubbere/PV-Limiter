@@ -1,0 +1,2218 @@
+[
+    {
+        "id": "294841a2de373763",
+        "type": "tab",
+        "label": "PV Limiter v1.0",
+        "disabled": false,
+        "info": "PV Limiter v1.0\n=================\n\nPrice- and grid-aware power limiter for one or two PV inverters, driven from\nHome Assistant. When power is cheap the inverters go to 0% and the battery\nstrategy switches to Charge; when power is expensive they run at 100% (full\noutput); in the normal price band a 5 s loop checks battery state-of-charge\nfirst, then the grid deadband: below 95% SoC it sets the limiter to 100% (full\noutput) to charge, above 95% SoC it trims down whenever grid power is outside\nthe deadband. Changing the thresholds, deadband\nor step size while enabled restarts the flow (re-runs the price evaluation).\nPV2 is driven only when auto-detected. 3 consecutive bad sensor reads fall\nback to a safe 50%.\n\n>> Full how-it-works walkthrough - trigger, master gate, every group, the\n   required HA helpers and the flow context vars - is in the on-canvas comment\n   node titled \"📖 Flow Documentation — PV Limiter v1.0 (how it works)\". Keep that\n   node as the detailed reference; this Info panel holds the summary above and\n   the version history below.\n\nVersion history\n---------------\nv1.0 - Initial release of PV Limiter. Price- and grid-aware power limiter for\n       one or two PV inverters: price branches set 0% (cheap, battery Charge)\n       or 100% (expensive); the normal-price band runs a 5 s P1 balance loop\n       that checks battery SoC first (below 95% drives to 100% to charge, above\n       95% trims down only when grid power is outside the deadband) then the\n       grid deadband. PV2 is driven only when auto-detected; 3 consecutive bad\n       sensor reads fall back to a safe 50%. Changing thresholds, deadband or\n       step size while enabled restarts the flow. Starts ENABLED by default\n       (On-start inject) and evaluates the price exactly once on deploy.\n       Pool-Heat-Pump-style logging: rolling 10-entry buffer published as both\n       a JSON entries attribute and a ready-to-render Markdown table, seeded\n       with a startup entry on deploy.\n",
+        "env": []
+    },
+    {
+        "id": "23f8eff1df054a6d",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "00 Control (enable / disable)",
+        "style": {
+            "label": true,
+            "fill": "#e3f2fd",
+            "fill-opacity": "0.2",
+            "color": "#1e88e5",
+            "stroke": "#0070c0"
+        },
+        "nodes": [
+            "4b2302a2ce5ba205",
+            "ee4e15fc5f028e1d",
+            "2f3e2d633c71c11f",
+            "b9af1fd4063f4cb1",
+            "9952f384fb192a9e",
+            "37ac4e16dfef910f",
+            "3f17bfa0f14a31f6",
+            "35a77027292728b1"
+        ],
+        "x": 24,
+        "y": 79,
+        "w": 742,
+        "h": 222
+    },
+    {
+        "id": "99ebd10c34985174",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "01 Price Trigger",
+        "style": {
+            "label": true,
+            "fill": "#e3f2fd",
+            "fill-opacity": "0.2",
+            "color": "#1e88e5",
+            "stroke": "#0070c0"
+        },
+        "nodes": [
+            "bd0624345dd5f947",
+            "41f03e909075cb76",
+            "264625758b8a74f7"
+        ],
+        "x": 34,
+        "y": 419,
+        "w": 472,
+        "h": 142
+    },
+    {
+        "id": "876441a6a0804ae3",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "02 Decision (enabled? → thresholds → sanity → price switch)",
+        "style": {
+            "label": true,
+            "fill": "#f3e5f5",
+            "fill-opacity": "0.2",
+            "color": "#8e24aa",
+            "stroke": "#8e24aa"
+        },
+        "nodes": [
+            "8b65ebb9265658b6",
+            "94a2c6c493043948",
+            "7bad9db27a833dfd",
+            "979a021a53eba7a2",
+            "08d566bf91e639e2"
+        ],
+        "x": 34,
+        "y": 579,
+        "w": 532,
+        "h": 202
+    },
+    {
+        "id": "065c64ebb7fbdcd8",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "03 Low Price → PV 0% + Charge",
+        "style": {
+            "label": true,
+            "fill": "#ffecb3",
+            "fill-opacity": "0.2",
+            "color": "#ef6c00",
+            "stroke": "#ef6c00"
+        },
+        "nodes": [
+            "40db5d42b1321a65",
+            "9367d29853ce06b8",
+            "988be8e149f9e7cd",
+            "8228c1e34804bb45",
+            "c62f02ea961990ac",
+            "27bd84e928c75fbf"
+        ],
+        "x": 794,
+        "y": 79,
+        "w": 602,
+        "h": 202
+    },
+    {
+        "id": "a2668aec2a76686d",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "04 High Price → PV 100% + Self-consumption",
+        "style": {
+            "label": true,
+            "fill": "#e8f5e9",
+            "fill-opacity": "0.2",
+            "color": "#43a047",
+            "stroke": "#92d04f"
+        },
+        "nodes": [
+            "c78526ccd7c725ea",
+            "ac198f748f874793",
+            "bb54b716353b6f98",
+            "12cfdbcef0cf261f",
+            "7cd69194476e1b2b"
+        ],
+        "x": 784,
+        "y": 299,
+        "w": 612,
+        "h": 182
+    },
+    {
+        "id": "02bba62785b4d560",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "05 Normal Price → Activate P1 Loop",
+        "style": {
+            "label": true,
+            "fill": "#fff3e0",
+            "fill-opacity": "0.2",
+            "color": "#fb8c00",
+            "stroke": "#fb8c00"
+        },
+        "nodes": [
+            "d64dc9ed622e138d",
+            "6d012bbb34053ca6"
+        ],
+        "x": 794,
+        "y": 499,
+        "w": 602,
+        "h": 82
+    },
+    {
+        "id": "8b2ea441e7774d10",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "06 Watchdog (bad-tick safety fallback)",
+        "style": {
+            "label": true,
+            "fill": "#fce4ec",
+            "fill-opacity": "0.2",
+            "color": "#c62828",
+            "stroke": "#c62828"
+        },
+        "nodes": [
+            "e1510a31df4e1229",
+            "453cbd29514db6cb",
+            "dd689b28bbbf2035",
+            "8cb67f4e5be73dae",
+            "e182636bc3e985ea",
+            "3330a78de9bf2fe1"
+        ],
+        "x": 794,
+        "y": 599,
+        "w": 602,
+        "h": 202
+    },
+    {
+        "id": "2bc3d0eff3e01f23",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "07 P1 Balance Loop — every 5 s when price is in normal range",
+        "style": {
+            "label": true,
+            "fill": "#e0f7fa",
+            "fill-opacity": "0.2",
+            "color": "#00838f",
+            "stroke": "#00838f"
+        },
+        "nodes": [
+            "24bd77b607046634",
+            "8fe3c51e9b69bcdc",
+            "22f9f53e5bf23bc4",
+            "50bf12f43cc71e55",
+            "a70ee2b2518c9c60",
+            "91c97bc8e882aebe",
+            "dfa54e11f8659027",
+            "83aae137769c049c",
+            "9e164cc203c2f60c",
+            "99e57b0125aaa01f",
+            "86dee543da06748f",
+            "86764beccb0eb4bd",
+            "ccf0f7fe07027c36",
+            "7cdcb1c2befbe507",
+            "f555ccf216087589",
+            "90fe4e2462b7f30b"
+        ],
+        "x": 24,
+        "y": 819,
+        "w": 1372,
+        "h": 282
+    },
+    {
+        "id": "6733a83a820baa66",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "99 Update UI: PV Limiter log",
+        "style": {
+            "label": true,
+            "stroke": "#9363b7",
+            "color": "#9363b7"
+        },
+        "nodes": [
+            "dad6f4663236c045",
+            "94f78a625115240d",
+            "a75cc2e0058eb118",
+            "9ccb6012d6db776d",
+            "9339107bc26a6969",
+            "d0d93071d29ccdbe"
+        ],
+        "x": 734,
+        "y": 1153,
+        "w": 662,
+        "h": 228
+    },
+    {
+        "id": "af9ed8e580ae1814",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "08 Config Monitoring",
+        "style": {
+            "label": true,
+            "stroke": "#ff9800",
+            "color": "#ff9800",
+            "fill": "none"
+        },
+        "nodes": [
+            "e6dff690acf730d5",
+            "0451d6ccc7b8e520",
+            "a81d917a587742b1",
+            "c5717b9ae9f216b8",
+            "7c8b34a080631be9",
+            "5b57fe2564c7c0b4"
+        ],
+        "x": 24,
+        "y": 1119,
+        "w": 692,
+        "h": 262
+    },
+    {
+        "id": "d420a7d94dc8005e",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "09 PV2 Detection",
+        "style": {
+            "label": true,
+            "stroke": "#607d8b",
+            "color": "#607d8b",
+            "fill": "none"
+        },
+        "nodes": [
+            "934b21ed6a7ad288",
+            "fe14e3f0d8f24648"
+        ],
+        "x": 34,
+        "y": 319,
+        "w": 542,
+        "h": 82
+    },
+    {
+        "id": "67ac8caff26d51b4",
+        "type": "group",
+        "z": "294841a2de373763",
+        "name": "10 Flow Version",
+        "style": {
+            "label": true,
+            "stroke": "#9363b7",
+            "color": "#9363b7",
+            "fill": "none"
+        },
+        "nodes": [
+            "19c20b6f0993fb40",
+            "0a8bbd9766dd8afc",
+            "8825091d1c6dd1d1"
+        ],
+        "x": 14,
+        "y": 1399,
+        "w": 782,
+        "h": 82
+    },
+    {
+        "id": "9ccb6012d6db776d",
+        "type": "group",
+        "z": "294841a2de373763",
+        "g": "6733a83a820baa66",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "826c5feff02c804c"
+        ],
+        "x": 764,
+        "y": 1179,
+        "w": 82,
+        "h": 82
+    },
+    {
+        "id": "4b2302a2ce5ba205",
+        "type": "inject",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "Enable flow",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "branch",
+                "v": "toggle_on",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "topic": "",
+        "payload": "on",
+        "payloadType": "str",
+        "x": 170,
+        "y": 120,
+        "wires": [
+            [
+                "2f3e2d633c71c11f"
+            ]
+        ]
+    },
+    {
+        "id": "ee4e15fc5f028e1d",
+        "type": "inject",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "Disable flow",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "branch",
+                "v": "toggle_off",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "topic": "",
+        "payload": "off",
+        "payloadType": "str",
+        "x": 170,
+        "y": 160,
+        "wires": [
+            [
+                "2f3e2d633c71c11f"
+            ]
+        ]
+    },
+    {
+        "id": "35a77027292728b1",
+        "type": "inject",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "On start: enable (default ON)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "branch",
+                "v": "toggle_on",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "2",
+        "topic": "",
+        "payload": "on",
+        "payloadType": "str",
+        "x": 190,
+        "y": 260,
+        "wires": [
+            [
+                "2f3e2d633c71c11f"
+            ]
+        ]
+    },
+    {
+        "id": "2f3e2d633c71c11f",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "Validate & debounce",
+        "func": "if (msg.payload !== 'on' && msg.payload !== 'off') {\n    node.warn('Rejected invalid toggle payload: ' + msg.payload);\n    node.status({fill:'red', shape:'ring', text:'bad payload: ' + msg.payload});\n    return null;\n}\nconst now = Date.now();\nconst last = flow.get('last_toggle_ts') || 0;\nif (now - last < 2000) {\n    node.status({fill:'grey', shape:'ring', text:'debounced'});\n    return null;\n}\nflow.set('last_toggle_ts', now);\nnode.status({fill:'blue', shape:'dot', text:`turn_${msg.payload}`});\nreturn msg;",
+        "outputs": 1,
+        "x": 380,
+        "y": 120,
+        "wires": [
+            [
+                "b9af1fd4063f4cb1"
+            ]
+        ]
+    },
+    {
+        "id": "b9af1fd4063f4cb1",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "Toggle input_boolean in HA",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "input_boolean.turn_{{payload}}",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "input_boolean.pv_limiter"
+        ],
+        "labelId": [],
+        "data": "",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "input_boolean",
+        "service": "turn_{{payload}}",
+        "x": 620,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9952f384fb192a9e",
+        "type": "server-state-changed",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "input_boolean changed",
+        "server": "176d29a.6f648d6",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_boolean.pv_limiter"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": true,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "outputOnlyOnStateChange": true,
+        "for": "",
+        "forType": "num",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "x": 160,
+        "y": 220,
+        "wires": [
+            [
+                "37ac4e16dfef910f"
+            ]
+        ]
+    },
+    {
+        "id": "37ac4e16dfef910f",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "Handle enable / disable",
+        "func": "const state = msg.payload;\nflow.set('pv_enabled', state === 'on');\nif (state === 'off') {\n    flow.set('pv_loop_active', false);\n    msg.branch = 'toggle_off';\n    msg.group = '00 Control';\n    node.status({fill:'grey', shape:'dot', text:'disabled'});\n} else {\n    msg.branch = 'toggle_on';\n    msg.group = '00 Control';\n    node.status({fill:'green', shape:'dot', text:'enabled'});\n}\nreturn msg;",
+        "outputs": 1,
+        "x": 410,
+        "y": 220,
+        "wires": [
+            [
+                "3f17bfa0f14a31f6"
+            ]
+        ]
+    },
+    {
+        "id": "3f17bfa0f14a31f6",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "23f8eff1df054a6d",
+        "name": "Log: toggle",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 565,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "bd0624345dd5f947",
+        "type": "server-state-changed",
+        "z": "294841a2de373763",
+        "g": "99ebd10c34985174",
+        "name": "Price changed",
+        "server": "176d29a.6f648d6",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.gespot_current_price_be"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "outputOnlyOnStateChange": true,
+        "for": "",
+        "forType": "num",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": true,
+        "ignoreCurrentStateUnavailable": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "x": 130,
+        "y": 520,
+        "wires": [
+            [
+                "8b65ebb9265658b6"
+            ]
+        ]
+    },
+    {
+        "id": "8b65ebb9265658b6",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "876441a6a0804ae3",
+        "name": "Flow enabled?",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 2,
+        "halt_if": "on",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_boolean.pv_limiter",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [],
+        "for": "0",
+        "forType": "num",
+        "x": 140,
+        "y": 620,
+        "wires": [
+            [
+                "94a2c6c493043948"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "94a2c6c493043948",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "876441a6a0804ae3",
+        "name": "Get threshold low",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "entity_id": "input_number.pv_price_threshold_low",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "threshold_low",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "for": "",
+        "forType": "num",
+        "x": 150,
+        "y": 680,
+        "wires": [
+            [
+                "7bad9db27a833dfd"
+            ]
+        ]
+    },
+    {
+        "id": "7bad9db27a833dfd",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "876441a6a0804ae3",
+        "name": "Get threshold high",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "entity_id": "input_number.pv_price_threshold_high",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "threshold_high",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "for": "",
+        "forType": "num",
+        "x": 150,
+        "y": 740,
+        "wires": [
+            [
+                "979a021a53eba7a2"
+            ]
+        ]
+    },
+    {
+        "id": "979a021a53eba7a2",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "876441a6a0804ae3",
+        "name": "Threshold sanity",
+        "func": "const px = parseFloat(msg.payload);\nconst lo = parseFloat(msg.threshold_low);\nconst hi = parseFloat(msg.threshold_high);\nmsg.price = msg.payload;\nif (!isFinite(px) || !isFinite(lo) || !isFinite(hi)) {\n    msg.event = 'invalid_input';\n    msg.error_detail = `lo=${msg.threshold_low} hi=${msg.threshold_high} px=${msg.payload}`;\n    msg.group = '02 Decision';\n    return [null, msg];\n}\nif (lo >= hi) {\n    msg.event = 'thresholds_inverted';\n    msg.error_detail = `lo=${lo} >= hi=${hi}`;\n    msg.group = '02 Decision';\n    return [null, msg];\n}\nmsg.price_f = px;\nmsg.threshold_low_f = lo;\nmsg.threshold_high_f = hi;\nmsg.group = '02 Decision';\nflow.set('pv_invalid_count', 0);\nreturn [msg, null];",
+        "outputs": 2,
+        "x": 460,
+        "y": 740,
+        "wires": [
+            [
+                "08d566bf91e639e2"
+            ],
+            [
+                "e1510a31df4e1229"
+            ]
+        ]
+    },
+    {
+        "id": "08d566bf91e639e2",
+        "type": "switch",
+        "z": "294841a2de373763",
+        "g": "876441a6a0804ae3",
+        "name": "Price branch",
+        "property": "price_f",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lt",
+                "v": "threshold_low_f",
+                "vt": "msg"
+            },
+            {
+                "t": "gte",
+                "v": "threshold_high_f",
+                "vt": "msg"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 3,
+        "x": 450,
+        "y": 660,
+        "wires": [
+            [
+                "40db5d42b1321a65"
+            ],
+            [
+                "c78526ccd7c725ea"
+            ],
+            [
+                "d64dc9ed622e138d"
+            ]
+        ]
+    },
+    {
+        "id": "40db5d42b1321a65",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "065c64ebb7fbdcd8",
+        "name": "Prepare 0% + stop loop",
+        "func": "flow.set('pv_loop_active', false);\nflow.set('pv_desired', {pv1: 0, pv2: 0, ts: Date.now()});\nmsg.branch = 'cheap_zero';\nmsg.group = '03 Low Price';\nmsg.new_pv1 = 0;\nmsg.new_pv2 = 0;\nreturn msg;",
+        "outputs": 1,
+        "x": 930,
+        "y": 120,
+        "wires": [
+            [
+                "9367d29853ce06b8"
+            ]
+        ]
+    },
+    {
+        "id": "9367d29853ce06b8",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "065c64ebb7fbdcd8",
+        "name": "Set PV1 to 0%",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv1_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": 0}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1190,
+        "y": 120,
+        "wires": [
+            [
+                "27bd84e928c75fbf"
+            ]
+        ]
+    },
+    {
+        "id": "988be8e149f9e7cd",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "065c64ebb7fbdcd8",
+        "name": "Set PV2 to 0%",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv2_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": 0}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1190,
+        "y": 180,
+        "wires": [
+            [
+                "8228c1e34804bb45"
+            ]
+        ]
+    },
+    {
+        "id": "8228c1e34804bb45",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "065c64ebb7fbdcd8",
+        "name": "Set strategy: Charge",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "input_select.select_option",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "input_select.house_battery_strategy"
+        ],
+        "labelId": [],
+        "data": "{\"option\": \"Charge\"}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "input_select",
+        "service": "select_option",
+        "x": 1180,
+        "y": 240,
+        "wires": [
+            [
+                "c62f02ea961990ac"
+            ]
+        ]
+    },
+    {
+        "id": "c62f02ea961990ac",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "065c64ebb7fbdcd8",
+        "name": "Log: cheap 0%",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 1355,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "c78526ccd7c725ea",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "a2668aec2a76686d",
+        "name": "Prepare 100% + stop loop",
+        "func": "flow.set('pv_loop_active', false);\nflow.set('pv_desired', {pv1: 100, pv2: 100, ts: Date.now()});\nmsg.branch = 'expensive_full';\nmsg.group = '04 High Price';\nmsg.new_pv1 = 100;\nmsg.new_pv2 = 100;\nreturn msg;",
+        "outputs": 1,
+        "x": 930,
+        "y": 340,
+        "wires": [
+            [
+                "ac198f748f874793"
+            ]
+        ]
+    },
+    {
+        "id": "ac198f748f874793",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "a2668aec2a76686d",
+        "name": "Set PV1 to 100%",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv1_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": 100}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1190,
+        "y": 340,
+        "wires": [
+            [
+                "7cd69194476e1b2b"
+            ]
+        ]
+    },
+    {
+        "id": "bb54b716353b6f98",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "a2668aec2a76686d",
+        "name": "Set PV2 to 100%",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv2_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": 100}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1190,
+        "y": 400,
+        "wires": [
+            [
+                "12cfdbcef0cf261f"
+            ]
+        ]
+    },
+    {
+        "id": "12cfdbcef0cf261f",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "a2668aec2a76686d",
+        "name": "Log: expensive 100%",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 1355,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "d64dc9ed622e138d",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "02bba62785b4d560",
+        "name": "Activate P1 loop",
+        "func": "flow.set('pv_loop_active', true);\nflow.set('pv_p1_last_branch', '');\nflow.set('pv_desired', null); // re-seed from live HA on the next loop tick\nmsg.branch = 'normal_price';\nmsg.group = '05 Normal Price';\nreturn msg;",
+        "outputs": 1,
+        "x": 900,
+        "y": 540,
+        "wires": [
+            [
+                "6d012bbb34053ca6"
+            ]
+        ]
+    },
+    {
+        "id": "6d012bbb34053ca6",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "02bba62785b4d560",
+        "name": "Log: normal price",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 1355,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "e1510a31df4e1229",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "8b2ea441e7774d10",
+        "name": "Watchdog (bad-tick counter)",
+        "func": "const key = 'pv_invalid_count';\nlet count = (flow.get(key) || 0) + 1;\nflow.set(key, count);\nif (count >= 3) {\n    msg.event = 'watchdog_fallback';\n    msg.error_detail = `${count} consecutive bad ticks`;\n    msg.group = '06 Watchdog';\n    msg.new_pv1 = 50;\n    msg.new_pv2 = 50;\n    flow.set('pv_loop_active', false);\n    flow.set('pv_desired', {pv1: 50, pv2: 50, ts: Date.now()}); // keep loop base in sync\n    flow.set(key, 0); // require a fresh 3 strikes before firing again\n    return [null, msg];\n}\nmsg.group = '06 Watchdog';\nreturn [msg, null];",
+        "outputs": 2,
+        "x": 940,
+        "y": 640,
+        "wires": [
+            [
+                "453cbd29514db6cb"
+            ],
+            [
+                "dd689b28bbbf2035"
+            ]
+        ]
+    },
+    {
+        "id": "453cbd29514db6cb",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "8b2ea441e7774d10",
+        "name": "Log: watchdog warn",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 1355,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "dd689b28bbbf2035",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "8b2ea441e7774d10",
+        "name": "Watchdog: Set PV1 to 50%",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv1_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": 50}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 990,
+        "y": 700,
+        "wires": [
+            [
+                "3330a78de9bf2fe1"
+            ]
+        ]
+    },
+    {
+        "id": "8cb67f4e5be73dae",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "8b2ea441e7774d10",
+        "name": "Watchdog: Set PV2 to 50%",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv2_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": 50}",
+        "dataType": "json",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 990,
+        "y": 760,
+        "wires": [
+            [
+                "e182636bc3e985ea"
+            ]
+        ]
+    },
+    {
+        "id": "e182636bc3e985ea",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "8b2ea441e7774d10",
+        "name": "Log: watchdog fallback",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 1355,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "24bd77b607046634",
+        "type": "inject",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Every 5 s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "5",
+        "once": false,
+        "onceDelay": 0,
+        "payloadType": "date",
+        "x": 130,
+        "y": 880,
+        "wires": [
+            [
+                "8fe3c51e9b69bcdc"
+            ]
+        ]
+    },
+    {
+        "id": "8fe3c51e9b69bcdc",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Gate: enabled & loop active?",
+        "func": "const enabled = flow.get('pv_enabled');\nconst active  = flow.get('pv_loop_active');\nif (enabled === false || !active) {\n    return null;\n}\nreturn msg;",
+        "outputs": 1,
+        "x": 190,
+        "y": 960,
+        "wires": [
+            [
+                "50bf12f43cc71e55"
+            ]
+        ]
+    },
+    {
+        "id": "22f9f53e5bf23bc4",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Get P1 power",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "entity_id": "sensor.p1_meter_power",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "p1_power",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "for": "",
+        "forType": "num",
+        "x": 460,
+        "y": 1040,
+        "wires": [
+            [
+                "dfa54e11f8659027"
+            ]
+        ]
+    },
+    {
+        "id": "50bf12f43cc71e55",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Get PV1 limit",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "entity_id": "number.pv1_power_limit_slider",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "pv1_current",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "for": "",
+        "forType": "num",
+        "x": 460,
+        "y": 860,
+        "wires": [
+            [
+                "a70ee2b2518c9c60"
+            ]
+        ]
+    },
+    {
+        "id": "a70ee2b2518c9c60",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Get PV2 limit",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "entity_id": "number.pv2_power_limit_slider",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "pv2_current",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "for": "",
+        "forType": "num",
+        "x": 460,
+        "y": 920,
+        "wires": [
+            [
+                "91c97bc8e882aebe"
+            ]
+        ]
+    },
+    {
+        "id": "91c97bc8e882aebe",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Get Battery SoC",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "entity_id": "sensor.combined_battery_soc",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "battery_soc",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "for": "",
+        "forType": "num",
+        "x": 460,
+        "y": 980,
+        "wires": [
+            [
+                "22f9f53e5bf23bc4"
+            ]
+        ]
+    },
+    {
+        "id": "dfa54e11f8659027",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Calculate P1 adjustment",
+        "func": "// Normal-price trim: SoC first, then the P1 deadband.\n// While SoC < 95% the limiter is driven straight to 100% (deadband\n// ignored). In the normal-price band the loop checks battery SoC first:\n//     SoC < 95% -> set the limiter to 100% (full output) to charge.\n//     SoC > 95% -> trim the limiter DOWN, but only when grid power is outside\n//                  the deadband (hold while inside).\n//     SoC = 95% -> hold.\n// Uses a flow-maintained desired setpoint (pv_desired) as the source of\n// truth instead of reading the slider back from HA every tick (avoids\n// actuator-feedback stalls/oscillation). HA limits are still read to detect a\n// manual slider change and to seed the setpoint after (re)activation. Config\n// (step/deadband) is read from the flow cache populated by 08 Config Monitoring.\n\nconst P1_MAX_ABS = 23000;        // +/-23 kW sanity clamp on the P1 reading\nconst RESYNC_DELTA = 5;          // % divergence that counts as a manual override\nconst CACHE_MAX_AGE_MS = 30000;  // ignore a desired setpoint older than this\n\n// #5 Race guard: a price branch may have stopped the loop while the (async)\n// HA reads for this tick were in flight - bail out so we don't overwrite 0/100/50.\nif (!flow.get('pv_loop_active')) {\n    return [null, null, null, null];\n}\n\nconst p1 = parseFloat(msg.p1_power);\nconst haS1 = parseFloat(msg.pv1_current);\nconst haS2 = parseFloat(msg.pv2_current);\nconst pv2Present = flow.get('pv2_present') === true;\nconst socRaw = parseFloat(msg.battery_soc);\nconst SOC_THRESHOLD = 95;   // < threshold -> charge up, > threshold -> trim down\nmsg.battery_soc_f = isFinite(socRaw) ? socRaw : null;\nmsg.battery_full  = isFinite(socRaw) && socRaw >= 100;\nmsg.pv2_present = pv2Present;\n\n// #4 Establish the base setpoint to step from.\nconst desired = flow.get('pv_desired');\nconst fresh = desired && isFinite(desired.pv1) && isFinite(desired.pv2)\n            && (Date.now() - (desired.ts || 0) < CACHE_MAX_AGE_MS);\nlet pv1Base, pv2Base;\nif (fresh) {\n    // Desired setpoint is the source of truth, but resync if a slider was moved\n    // externally (manual override / another automation).\n    pv1Base = (isFinite(haS1) && Math.abs(haS1 - desired.pv1) > RESYNC_DELTA) ? haS1 : desired.pv1;\n    pv2Base = (isFinite(haS2) && Math.abs(haS2 - desired.pv2) > RESYNC_DELTA) ? haS2 : desired.pv2;\n} else {\n    // No (or stale) setpoint - seed from the live HA reads.\n    pv1Base = haS1;\n    pv2Base = haS2;\n}\n\n// If PV2 is not present, mirror PV1 so the step maths stay valid; the PV2\n// service write is gated downstream and never fires when PV2 is absent.\nif (!pv2Present) pv2Base = pv1Base;\n\n// Validate everything we need; missing/out-of-range -> watchdog branch.\n// PV2's reading is only required when PV2 is actually present.\nif (!isFinite(p1) || Math.abs(p1) > P1_MAX_ABS || !isFinite(pv1Base) || (pv2Present && !isFinite(pv2Base)) || !isFinite(socRaw)) {\n    msg.branch = 'p1_invalid_input';\n    msg.error_detail = `p1=${msg.p1_power} pv1=${msg.pv1_current} pv2=${msg.pv2_current} soc=${msg.battery_soc}`;\n    msg.group = '07 P1 Balance Loop';\n    return [null, null, null, msg];\n}\n\n// #1 Healthy tick -> clear the shared bad-tick counter so the watchdog only\n// trips on genuinely consecutive failures.\nflow.set('pv_invalid_count', 0);\n\n// #7 Config from flow cache (populated by the 08 Config Monitoring listeners),\n// with the same defaults as before if the cache is not yet warm.\nconst stepRaw = parseFloat(flow.get('cfg_step'));\nconst dbRaw = parseFloat(flow.get('cfg_deadband'));\nconst step = isFinite(stepRaw) ? Math.max(1, Math.min(10, stepRaw)) : 2;\nconst deadband = isFinite(dbRaw) ? Math.max(0, dbRaw) : 100;\nconst min = 0, max = 100;\nconst lastBranch = flow.get('pv_p1_last_branch') || '';\n\nfunction commit(s1, s2, branch, outIndex) {\n    msg.new_pv1 = s1; msg.new_pv2 = s2;\n    msg.branch = branch; msg.group = '07 P1 Balance Loop';\n    flow.set('pv_desired', {pv1: s1, pv2: s2, ts: Date.now()});\n    flow.set('pv_p1_last_branch', branch);\n    const out = [null, null, null, null];\n    out[outIndex] = msg;\n    return out;\n}\nfunction balanced() {\n    msg.branch = 'balanced'; msg.group = '07 P1 Balance Loop';\n    flow.set('pv_p1_last_branch', 'balanced');\n    return [null, null, (lastBranch !== 'balanced' ? msg : null), null];\n}\nfunction reduce() {\n    const r1 = Math.max(min, Math.min(max, Math.round(pv1Base - step)));\n    const r2 = Math.max(min, Math.min(max, Math.round(pv2Base - step)));\n    if (r1 === pv1Base && r2 === pv2Base) return balanced();\n    return commit(r1, r2, 'reduce', 0);\n}\nfunction increase() {\n    const n1 = Math.max(min, Math.min(max, Math.round(pv1Base + step)));\n    const n2 = Math.max(min, Math.min(max, Math.round(pv2Base + step)));\n    if (n1 === pv1Base && n2 === pv2Base) return balanced();\n    return commit(n1, n2, 'increase', 1);\n}\n\n// Check SoC first, then the P1 deadband.\nconst outOfBand = Math.abs(p1) > deadband;\n\n// Battery below 95% -> drive the limiter straight to 100% (full output) to\n// charge, regardless of the grid deadband.\nif (socRaw < SOC_THRESHOLD) {\n    if (pv1Base === 100 && pv2Base === 100) return balanced();\n    return commit(100, 100, 'increase', 1);\n}\n\n// Battery above 95% -> trim the limiter DOWN, but only when grid power is\n// outside the deadband; hold while the grid is inside the band.\nif (socRaw > SOC_THRESHOLD) {\n    return outOfBand ? reduce() : balanced();\n}\n\n// SoC exactly at the threshold -> hold.\nreturn balanced();\n",
+        "outputs": 4,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 1000,
+        "wires": [
+            [
+                "83aae137769c049c"
+            ],
+            [
+                "86dee543da06748f"
+            ],
+            [
+                "7cdcb1c2befbe507"
+            ],
+            [
+                "e1510a31df4e1229"
+            ]
+        ]
+    },
+    {
+        "id": "83aae137769c049c",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Set PV1 (reduce)",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv1_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": $number(msg.new_pv1)}",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1010,
+        "y": 860,
+        "wires": [
+            [
+                "f555ccf216087589"
+            ]
+        ]
+    },
+    {
+        "id": "9e164cc203c2f60c",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Set PV2 (reduce)",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv2_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": $number(msg.new_pv2)}",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1010,
+        "y": 920,
+        "wires": [
+            [
+                "99e57b0125aaa01f"
+            ]
+        ]
+    },
+    {
+        "id": "99e57b0125aaa01f",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Log: P1 reduce",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 1355,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "86dee543da06748f",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Set PV1 (increase)",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv1_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": $number(msg.new_pv1)}",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1020,
+        "y": 980,
+        "wires": [
+            [
+                "90fe4e2462b7f30b"
+            ]
+        ]
+    },
+    {
+        "id": "86764beccb0eb4bd",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Set PV2 (increase)",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "number.set_value",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [
+            "number.pv2_power_limit_slider"
+        ],
+        "labelId": [],
+        "data": "{\"value\": $number(msg.new_pv2)}",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "number",
+        "service": "set_value",
+        "x": 1020,
+        "y": 1040,
+        "wires": [
+            [
+                "ccf0f7fe07027c36"
+            ]
+        ]
+    },
+    {
+        "id": "ccf0f7fe07027c36",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Log: P1 increase",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 1355,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "7cdcb1c2befbe507",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "Log: P1 balanced",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 875,
+        "y": 1060,
+        "wires": []
+    },
+    {
+        "id": "826c5feff02c804c",
+        "type": "link in",
+        "z": "294841a2de373763",
+        "g": "9ccb6012d6db776d",
+        "name": "Update PV Limiter Log",
+        "links": [
+            "3f17bfa0f14a31f6",
+            "c62f02ea961990ac",
+            "12cfdbcef0cf261f",
+            "6d012bbb34053ca6",
+            "453cbd29514db6cb",
+            "e182636bc3e985ea",
+            "99e57b0125aaa01f",
+            "ccf0f7fe07027c36",
+            "7cdcb1c2befbe507",
+            "7c8b34a080631be9"
+        ],
+        "x": 805,
+        "y": 1220,
+        "wires": [
+            [
+                "94f78a625115240d"
+            ]
+        ]
+    },
+    {
+        "id": "94f78a625115240d",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "6733a83a820baa66",
+        "name": "Build log entry",
+        "func": "// PV Limiter log — pool-heat-pump-style logging.\n// Keeps a rolling buffer and publishes it to sensor.pv_limiter_log as both a\n// JSON `entries` attribute and a ready-to-render markdown table.\n\nconst MAX = 10;\nconst now = new Date();\nconst ts = now.toLocaleTimeString('nl-BE', {timeZone: 'Europe/Brussels', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}) + '.' + now.getMilliseconds().toString().padStart(3, '0');\nlet level = 'log', icon = '🔄', flowName = 'PV Limiter', group = msg.group || 'Unknown', nodeName = 'Flow', payload = '';\nconst branch = msg.branch || msg.event || '';\nconst socTxt = (msg.battery_soc_f !== undefined && msg.battery_soc_f !== null) ? ` (SoC ${msg.battery_soc_f}%${msg.battery_full ? ' 🔋full' : ''})` : '';\nconst pvTxt = (msg.pv2_present === false) ? `${msg.new_pv1}%` : `${msg.new_pv1}%/${msg.new_pv2}%`;\n\nif (msg.error) {\n    level='error'; icon='❌'; nodeName='Error'; payload=msg.error.message;\n}\nelse if(branch==='startup'){\n    icon='ℹ️'; group='00 Control'; nodeName='Flow'; payload='Flow started — logging active';\n}\nelse if(branch==='toggle_on'){\n    icon='▶️'; group='00 Control'; nodeName='Control'; payload='PV Limiter enabled';\n}\nelse if(branch==='toggle_off'){\n    icon='⏹️'; group='00 Control'; nodeName='Control'; payload='PV Limiter disabled';\n}\nelse if(branch==='cheap_zero'){\n    icon='⚡'; group='03 Low Price'; nodeName='Price Check'; payload=`Low price ${(msg.price_f*100).toFixed(2)} ct -> PV 0%`;\n}\nelse if(branch==='expensive_full'){\n    icon='💰'; group='04 High Price'; nodeName='Price Check'; payload=`High price ${(msg.price_f*100).toFixed(2)} ct -> PV 100%`;\n}\nelse if(branch==='normal_price'){\n    icon='🔁'; group='05 Normal Price'; nodeName='Price Check'; payload=`Normal price ${(msg.price_f*100).toFixed(2)} ct -> P1 Balance active`;\n}\nelse if(branch==='reduce'){\n    icon='⬇️'; group='07 P1 Balance Loop'; nodeName='P1 Balance'; payload=`Export ${Math.abs(msg.p1_power)} W -> ${pvTxt}${socTxt}`;\n}\nelse if(branch==='increase'){\n    icon='⬆️'; group='07 P1 Balance Loop'; nodeName='P1 Balance'; payload=`Import ${msg.p1_power} W -> ${pvTxt}${socTxt}`;\n}\nelse if(branch==='soc_increase'){\n    icon='🔋'; group='07 P1 Balance Loop'; nodeName='P1 Balance'; payload=`Battery charging${socTxt} -> PV up to ${pvTxt}`;\n}\nelse if(branch==='balanced'){\n    icon='✅'; group='07 P1 Balance Loop'; nodeName='P1 Balance'; payload=`P1 ${msg.p1_power} W in deadband${socTxt}`;\n}\nelse if(branch==='invalid_input'){\n    level='warn'; icon='⚠️'; group='02 Decision'; nodeName='Sanity'; payload=`Invalid input: ${msg.error_detail}`;\n}\nelse if(branch==='thresholds_inverted'){\n    level='warn'; icon='⚠️'; group='02 Decision'; nodeName='Sanity'; payload='Inverted thresholds';\n}\nelse if(branch==='p1_invalid_input'){\n    level='warn'; icon='⚠️'; group='07 P1 Balance Loop'; nodeName='P1 Calc'; payload=`Sensor error: ${msg.error_detail}`;\n}\nelse if(branch==='config_change'){\n    icon='⚙️'; group='08 Config Monitoring'; nodeName='Config';\n    payload=`${msg.config_param}: ${msg.old_value} → ${msg.new_value}`;\n}\nelse if(branch==='watchdog_fallback'){\n    level='error'; icon='🛑'; group='06 Watchdog'; nodeName='Watchdog'; payload='Fallback to 50%';\n}\n\nconst entry = {timestamp:ts, icon, level, flow:flowName, group, node:nodeName, payload};\nlet buf = flow.get('pv_log_buffer') || [];\nbuf.unshift(entry);\nif(buf.length>MAX) buf=buf.slice(0,MAX);\nflow.set('pv_log_buffer',buf);\n\n// Build a ready-to-render markdown table (with real newlines) so the\n// dashboard card does not depend on YAML folding for row breaks.\nconst colorFor = (lvl) => lvl === 'log' ? '#1e88e5' : lvl === 'warn' ? 'orange' : lvl === 'error' ? 'red' : '#009ac7';\nlet md = '| Time |  | Flow | Group | Node | Explanation |\\n| :--- | :--- | :--- | :--- | :--- | :--- |\\n';\nfor (const e of buf) {\n    md += `| ${e.timestamp} | ${e.icon} | <font color=\"${colorFor(e.level)}\">${e.flow}</font> | ${e.group} | ${e.node} | ${e.payload} |\\n`;\n}\n\nmsg.payload={state:ts, attributes:{friendly_name:'PV Limiter Log', entries:JSON.stringify(buf), markdown: md}};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 1220,
+        "wires": [
+            [
+                "a75cc2e0058eb118"
+            ]
+        ]
+    },
+    {
+        "id": "9339107bc26a6969",
+        "type": "inject",
+        "z": "294841a2de373763",
+        "g": "6733a83a820baa66",
+        "name": "On deploy: seed log",
+        "props": [
+            {
+                "p": "topic",
+                "v": "startup",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "3",
+        "topic": "startup",
+        "x": 880,
+        "y": 1340,
+        "wires": [
+            [
+                "d0d93071d29ccdbe"
+            ]
+        ]
+    },
+    {
+        "id": "d0d93071d29ccdbe",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "6733a83a820baa66",
+        "name": "Build startup event",
+        "func": "msg.branch = 'startup';\nmsg.group = '00 Control';\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 1340,
+        "wires": [
+            [
+                "94f78a625115240d"
+            ]
+        ]
+    },
+    {
+        "id": "a75cc2e0058eb118",
+        "type": "ha-api",
+        "z": "294841a2de373763",
+        "g": "6733a83a820baa66",
+        "name": "Set sensor.pv_limiter_log",
+        "server": "176d29a.6f648d6",
+        "version": 1,
+        "debugenabled": false,
+        "protocol": "http",
+        "method": "post",
+        "path": "/api/states/sensor.pv_limiter_log",
+        "data": "payload",
+        "dataType": "jsonata",
+        "responseType": "json",
+        "outputProperties": [],
+        "x": 1260,
+        "y": 1220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "dad6f4663236c045",
+        "type": "catch",
+        "z": "294841a2de373763",
+        "g": "6733a83a820baa66",
+        "name": "Catch all errors",
+        "scope": null,
+        "uncaught": false,
+        "x": 840,
+        "y": 1300,
+        "wires": [
+            [
+                "94f78a625115240d"
+            ]
+        ]
+    },
+    {
+        "id": "e6dff690acf730d5",
+        "type": "server-state-changed",
+        "z": "294841a2de373763",
+        "g": "af9ed8e580ae1814",
+        "name": "Threshold Low changed",
+        "server": "176d29a.6f648d6",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.pv_price_threshold_low"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": true,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "outputOnlyOnStateChange": true,
+        "for": "",
+        "forType": "num",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "old_state",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "prevEntity"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityId"
+            }
+        ],
+        "x": 170,
+        "y": 1220,
+        "wires": [
+            [
+                "5b57fe2564c7c0b4"
+            ]
+        ]
+    },
+    {
+        "id": "0451d6ccc7b8e520",
+        "type": "server-state-changed",
+        "z": "294841a2de373763",
+        "g": "af9ed8e580ae1814",
+        "name": "Threshold High changed",
+        "server": "176d29a.6f648d6",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.pv_price_threshold_high"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": true,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "outputOnlyOnStateChange": true,
+        "for": "",
+        "forType": "num",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "old_state",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "prevEntity"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityId"
+            }
+        ],
+        "x": 160,
+        "y": 1160,
+        "wires": [
+            [
+                "5b57fe2564c7c0b4"
+            ]
+        ]
+    },
+    {
+        "id": "a81d917a587742b1",
+        "type": "server-state-changed",
+        "z": "294841a2de373763",
+        "g": "af9ed8e580ae1814",
+        "name": "Step Size changed",
+        "server": "176d29a.6f648d6",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.pv_step_size"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": true,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "outputOnlyOnStateChange": true,
+        "for": "",
+        "forType": "num",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "old_state",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "prevEntity"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityId"
+            }
+        ],
+        "x": 190,
+        "y": 1340,
+        "wires": [
+            [
+                "5b57fe2564c7c0b4"
+            ]
+        ]
+    },
+    {
+        "id": "c5717b9ae9f216b8",
+        "type": "server-state-changed",
+        "z": "294841a2de373763",
+        "g": "af9ed8e580ae1814",
+        "name": "P1 Deadband changed",
+        "server": "176d29a.6f648d6",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.pv_p1_deadband"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": true,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "outputOnlyOnStateChange": true,
+        "for": "",
+        "forType": "num",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "old_state",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "prevEntity"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityId"
+            }
+        ],
+        "x": 180,
+        "y": 1280,
+        "wires": [
+            [
+                "5b57fe2564c7c0b4"
+            ]
+        ]
+    },
+    {
+        "id": "7c8b34a080631be9",
+        "type": "link out",
+        "z": "294841a2de373763",
+        "g": "af9ed8e580ae1814",
+        "name": "Log: Config Monitoring",
+        "mode": "link",
+        "links": [
+            "826c5feff02c804c"
+        ],
+        "x": 675,
+        "y": 1260,
+        "wires": []
+    },
+    {
+        "id": "41f03e909075cb76",
+        "type": "inject",
+        "z": "294841a2de373763",
+        "g": "99ebd10c34985174",
+        "name": "Deploy: re-evaluate",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 460,
+        "wires": [
+            [
+                "264625758b8a74f7"
+            ]
+        ]
+    },
+    {
+        "id": "264625758b8a74f7",
+        "type": "api-current-state",
+        "z": "294841a2de373763",
+        "g": "99ebd10c34985174",
+        "name": "Read current price",
+        "server": "176d29a.6f648d6",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "entity_id": "sensor.gespot_current_price_be",
+        "state_type": "str",
+        "blockInputOverrides": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entityState"
+            }
+        ],
+        "for": "",
+        "forType": "num",
+        "x": 390,
+        "y": 460,
+        "wires": [
+            [
+                "8b65ebb9265658b6"
+            ]
+        ]
+    },
+    {
+        "id": "5b57fe2564c7c0b4",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "af9ed8e580ae1814",
+        "name": "Format config change",
+        "func": "const PARAM_MAP = {\n    'input_number.pv_price_threshold_low':  'Threshold Low',\n    'input_number.pv_price_threshold_high': 'Threshold High',\n    'input_number.pv_step_size':            'Step Size',\n    'input_number.pv_p1_deadband':          'P1 Deadband'\n};\nconst CACHE_MAP = {\n    'input_number.pv_price_threshold_low':  'cfg_threshold_low',\n    'input_number.pv_price_threshold_high': 'cfg_threshold_high',\n    'input_number.pv_step_size':            'cfg_step',\n    'input_number.pv_p1_deadband':          'cfg_deadband'\n};\nconst entityId = msg.topic\n    || (msg.old_state && msg.old_state.entity_id)\n    || (msg.new_state && msg.new_state.entity_id)\n    || (msg.data && msg.data.entity_id)\n    || (msg.event && msg.event.entity_id)\n    || (msg.data && msg.data.new_state && msg.data.new_state.entity_id)\n    || '';\n// Always refresh the flow cache so the P1 loop can read config without polling HA.\nif (CACHE_MAP[entityId]) {\n    const v = parseFloat(msg.payload);\n    if (isFinite(v)) flow.set(CACHE_MAP[entityId], v);\n}\n// Skip the deploy-time initial emit and any no-op change (old === new):\n// only a genuine value change should be logged.\nconst oldVal = (msg.old_state && msg.old_state.state);\nif (oldVal === undefined || oldVal === null || String(oldVal) === String(msg.payload)) {\n    return null;\n}\nmsg.branch       = 'config_change';\nmsg.group        = '08 Config Monitoring';\nmsg.config_param = PARAM_MAP[entityId] || entityId || 'Unknown';\nmsg.old_value    = oldVal;\nmsg.new_value    = msg.payload;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 1260,
+        "wires": [
+            [
+                "7c8b34a080631be9",
+                "264625758b8a74f7"
+            ]
+        ]
+    },
+    {
+        "id": "fd30fbfad793be5f",
+        "type": "comment",
+        "z": "294841a2de373763",
+        "name": "📖 Flow Documentation — PV Limiter v1.0 (how it works)",
+        "info": "# PV Limiter — Flow Documentation (v1.0)\n\n> Version history / change log lives in the tab's **Info** panel (double-click the tab name). This node is the detailed, canonical how-it-works reference.\n\nThis flow throttles one or two PV inverters (`number.pv1_power_limit_slider`\nand, when detected, `number.pv2_power_limit_slider`, 0–100 %) based on the\n**current electricity price** and, in the normal-price band, on **live grid (P1) power** and\n**battery state-of-charge (SoC)**. The goal: export nothing (or charge the\nbattery) when power is cheap, run flat-out when power is expensive, and in the\nnormal-price band trim the limiter on battery SoC first and the grid deadband\nsecond the rest of the time.\n\n## Big picture\n\n**Trigger:** every change of `sensor.gespot_current_price_be` (and once ~5 s\nafter deploy) runs the decision chain. A separate 5 s timer drives the P1\nbalance loop. **Master gate:** nothing acts unless `input_boolean.pv_limiter`\nis ON.\n\n**PV2 auto-detect:** `binary_sensor.pv2_config_present` is cached into flow\nvar `pv2_present`. Every PV2 write is gated on it and the P1 calc only needs\nan PV2 reading when present, so the flow runs on **PV1 alone** when the\nsecond inverter package is not installed.\n\nThree price branches:\n- **Low** (price < threshold_low) → both PVs to **0 %** + battery strategy\n  **Charge**, loop stopped.\n- **High** (price ≥ threshold_high) → both PVs to **100 %**, loop stopped.\n- **Normal** (in between) → arm the **P1 balance loop**.\n\nWatchdog: 3 consecutive bad sensor reads → safe **50 %** fallback.\n\n---\n\n## Groups\n\n**00 Control (enable / disable)** — Manual ▶/⏹ inject buttons and the matching\nHA `input_boolean` state listeners. A *Validate & debounce* function (2 s\ndebounce) rejects bad payloads and toggles `input_boolean.pv_limiter`; the\nlistener then mirrors the state into flow var `pv_enabled` (disabling also\nclears `pv_loop_active`). Every toggle is logged. an *On start:\nenable* inject fires once after deploy and turns `input_boolean.pv_limiter`\n**ON**, so the flow comes up **enabled by default**.\n\n**01 Price Trigger** — Fires the decision chain. *Price changed* listens to\n`sensor.gespot_current_price_be`; *Deploy: re-evaluate* injects once 5 s after\ndeploy and *Read current price* feeds the same entry point so the flow settles\nto the right state on restart. A genuine change to any **08 Config Monitoring**\nhelper (thresholds, deadband, step size) also routes through *Read current\nprice*, so editing config while the limiter is enabled restarts the decision\nchain.\n\n**02 Decision** — The gatekeeper chain: *Flow enabled?* halts unless\n`input_boolean.pv_limiter` is ON → *Get threshold low* / *Get threshold high*\nread the price bands → *Threshold sanity* parses/validates the numbers (NaN or\nlow ≥ high routes to the Watchdog) → *Price branch* switch routes to Low /\nHigh / Normal. A healthy pass resets `pv_invalid_count`.\n\n**03 Low Price → PV 0 % + Charge** — *Prepare 0 % + stop loop* clears\n`pv_loop_active`, sets the desired setpoint to 0/0, then calls set both PV\nsliders to 0 % and switches `input_select.house_battery_strategy` to **Charge**.\nLogged as `cheap_zero`.\n\n**04 High Price → PV 100 % + Self-consumption** — *Prepare 100 % + stop loop*\nstops the loop, sets the desired setpoint to 100/100, and drives both PV\nsliders to 100 % so the inverters run at full output. Logged as\n`expensive_full`.\n\n**05 Normal Price → Activate P1 Loop** — *Activate P1 loop* sets\n`pv_loop_active = true`, clears the last-branch marker and nulls `pv_desired`\nso the loop re-seeds from the live HA sliders on its next tick. Logged as\n`normal_price`.\n\n**06 Watchdog (bad-tick safety fallback)** — A shared bad-tick counter\n(`pv_invalid_count`). Bad reads from the Decision chain or the P1 calc land\nhere; on the **3rd** consecutive strike it forces both PVs to **50 %**, stops\nthe loop, syncs the setpoint, and resets the counter (a fresh 3 strikes are\nneeded to fire again). Logged as `watchdog_fallback`.\n\n**07 P1 Balance Loop — every 5 s in the normal-price band** — *Every 5 s* timer\n→ *Gate* (runs only when `pv_enabled` and `pv_loop_active` are both true) → reads PV1, PV2, battery SoC and `sensor.p1_meter_power` →\n*Calculate P1 adjustment*. The calc trims the PV output up/down by the\nconfigured **step**, checking battery **SoC** first and the grid **deadband**\nsecond:\n- A **race guard** bails if the loop was stopped mid-tick (so it can't\n  overwrite a 0/100/50 % write).\n- It steps from a flow-maintained **desired setpoint** (`pv_desired`), not by\n  reading the slider back each tick (avoids actuator-feedback stalls); a >5 %\n  divergence or a stale (>30 s) setpoint re-syncs from the live HA value.\n- **SoC < 95 % (charge):** drive the limiter straight to **100 %** (full\n  output) to charge the battery, **regardless of the deadband**. The limiter is\n  never trimmed down below 95 % SoC.\n- **SoC > 95 %:** trim the limiter **down** (`reduce`), but only when grid\n  power is outside the deadband; while |P1| ≤ deadband it holds (`balanced`,\n  logged only on transition).\n- **SoC = 95 %:** hold (`balanced`).\n- Missing/invalid sensor values → `p1_invalid_input` → Watchdog.\n\n**08 Config Monitoring** — Listeners on `input_number.pv_price_threshold_low`,\n`…_high`, `…_step_size`, and `…_p1_deadband`. *Format config change* caches\neach value into flow context (`cfg_*`) so the P1 loop reads config without\npolling HA, and logs only genuine changes (the deploy-time emit and no-op\nold == new changes are suppressed). Logged as `config_change`. a genuine\nchange also feeds *01 Price Trigger → Read current price*, so editing the\nthresholds, deadband or step size **restarts** the flow (re-runs the price\nevaluation) — routed through *Flow enabled?*, so nothing happens while the\nlimiter is off.\n\n**09 PV2 Detection** — *PV2 config present changed* listens to\n`binary_sensor.pv2_config_present` (with `outputInitially` so it also fires on\ndeploy); *Set pv2_present flag* caches the boolean into flow var\n`pv2_present` and shows a node status ('PV2 detected' / 'PV1 only'). The\nfive *PV2 present?* gates and the P1 calc read this flag so PV2 is only\ntouched when its modbus package exists.\n\n**99 Update UI: PV Limiter log** — Central logger. A *link in* collects events\nfrom every branch; *Build log entry* formats a timestamped entry (icon, level,\ngroup, node, payload), keeps a rolling **10-entry** buffer, and *Set\nsensor.pv_limiter_log* writes it to HA — publishing both a JSON `entries`\nattribute and a ready-to-render **Markdown table** (`markdown` attribute) for\nthe dashboard card. An *On deploy: seed log* inject feeds *Build startup event*\nso a `startup` entry is written on every deploy, and a tab-wide *Catch all\nerrors* routes runtime errors into the same logger.\n\n---\n\n## Required HA helpers\nAll helpers are defined in the\n[`pv_limiter_control.yaml`](https://github.com/coderubbere/HA-PV-Limiter/blob/main/home%20assistant/packages/pv_limiter_control.yaml)\npackage:\n1. `input_boolean.pv_limiter`\n2. `input_number.pv_price_threshold_low`\n3. `input_number.pv_price_threshold_high`\n4. `input_number.pv_step_size` (1–10, def 2)\n5. `input_number.pv_p1_deadband` (0–500, def 100)\n\nPlus an auto-created `binary_sensor.pv2_config_present` (from the `command_line`\nsensor in `pv_limiter_control.yaml`) that drives PV2 auto-detection.\n\n## Key flow context vars\n1. `pv_enabled`\n2. `pv_loop_active`\n3. `pv_desired` {pv1,pv2,ts}\n4. `pv_p1_last_branch`\n5. `pv_invalid_count`\n6. `cfg_step`\n7. `cfg_deadband`\n8. `cfg_threshold_low`\n9. `cfg_threshold_high`\n10. `pv_log_buffer`\n11. `pv2_present` (true when the PV2 package is detected)\n\n## Dashboad yaml\n1. [`dashboard.yaml`](https://github.com/coderubbere/HA-PV-Limiter/blob/main/home%20assistant/dashboard.yaml)\n\n## PV Modbus TCP yaml\n1. ['modbus_tcp_pv1.yaml'](https://github.com/coderubbere/HA-PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv1.yaml)\n2. ['modbus_tcp_pv2.yaml'](https://github.com/coderubbere/HA-PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv2.yaml)",
+        "x": 230,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "27bd84e928c75fbf",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "065c64ebb7fbdcd8",
+        "name": "PV2 present?",
+        "func": "// Only call the PV2 service when PV2 is detected; otherwise bypass\n// straight to the next node so the PV1-only chain still completes.\nif (flow.get('pv2_present') === true) { return [msg, null]; }\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 180,
+        "wires": [
+            [
+                "988be8e149f9e7cd"
+            ],
+            [
+                "8228c1e34804bb45"
+            ]
+        ]
+    },
+    {
+        "id": "7cd69194476e1b2b",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "a2668aec2a76686d",
+        "name": "PV2 present?",
+        "func": "// Only call the PV2 service when PV2 is detected; otherwise bypass\n// straight to the next node so the PV1-only chain still completes.\nif (flow.get('pv2_present') === true) { return [msg, null]; }\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 440,
+        "wires": [
+            [
+                "bb54b716353b6f98"
+            ],
+            [
+                "12cfdbcef0cf261f"
+            ]
+        ]
+    },
+    {
+        "id": "3330a78de9bf2fe1",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "8b2ea441e7774d10",
+        "name": "PV2 present?",
+        "func": "// Only call the PV2 service when PV2 is detected; otherwise bypass\n// straight to the next node so the PV1-only chain still completes.\nif (flow.get('pv2_present') === true) { return [msg, null]; }\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 700,
+        "wires": [
+            [
+                "8cb67f4e5be73dae"
+            ],
+            [
+                "e182636bc3e985ea"
+            ]
+        ]
+    },
+    {
+        "id": "f555ccf216087589",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "PV2 present?",
+        "func": "// Only call the PV2 service when PV2 is detected; otherwise bypass\n// straight to the next node so the PV1-only chain still completes.\nif (flow.get('pv2_present') === true) { return [msg, null]; }\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 860,
+        "wires": [
+            [
+                "9e164cc203c2f60c"
+            ],
+            [
+                "99e57b0125aaa01f"
+            ]
+        ]
+    },
+    {
+        "id": "90fe4e2462b7f30b",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "2bc3d0eff3e01f23",
+        "name": "PV2 present?",
+        "func": "// Only call the PV2 service when PV2 is detected; otherwise bypass\n// straight to the next node so the PV1-only chain still completes.\nif (flow.get('pv2_present') === true) { return [msg, null]; }\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 980,
+        "wires": [
+            [
+                "86764beccb0eb4bd"
+            ],
+            [
+                "ccf0f7fe07027c36"
+            ]
+        ]
+    },
+    {
+        "id": "934b21ed6a7ad288",
+        "type": "server-state-changed",
+        "z": "294841a2de373763",
+        "g": "d420a7d94dc8005e",
+        "name": "PV2 config present changed",
+        "server": "176d29a.6f648d6",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "binary_sensor.pv2_config_present"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": true,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "outputOnlyOnStateChange": true,
+        "for": "",
+        "forType": "num",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            }
+        ],
+        "x": 180,
+        "y": 360,
+        "wires": [
+            [
+                "fe14e3f0d8f24648"
+            ]
+        ]
+    },
+    {
+        "id": "fe14e3f0d8f24648",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "d420a7d94dc8005e",
+        "name": "Set pv2_present flag",
+        "func": "// Cache whether the PV2 modbus package is present so the rest of the flow\n// controls PV2 only when it exists. Driven by binary_sensor.pv2_config_present\n// (defined in pv_limiter_control.yaml). Emits on deploy via outputInitially.\nconst present = (msg.payload === 'on' || msg.payload === true);\nflow.set('pv2_present', present);\nnode.status({fill: present ? 'green' : 'grey', shape: 'dot', text: present ? 'PV2 detected' : 'PV1 only'});\nreturn null;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "19c20b6f0993fb40",
+        "type": "inject",
+        "z": "294841a2de373763",
+        "g": "67ac8caff26d51b4",
+        "name": "On start + hourly",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "3600",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 1440,
+        "wires": [
+            [
+                "0a8bbd9766dd8afc"
+            ]
+        ]
+    },
+    {
+        "id": "0a8bbd9766dd8afc",
+        "type": "function",
+        "z": "294841a2de373763",
+        "g": "67ac8caff26d51b4",
+        "name": "Build version payload",
+        "func": "const version = 'v1.0';\nmsg.payload = {\n    topic: 'pv_limiter/version',\n    payload: version,\n    retain: true,\n    qos: 1\n};\nnode.status({fill:'blue', shape:'dot', text:version});\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 1440,
+        "wires": [
+            [
+                "8825091d1c6dd1d1"
+            ]
+        ]
+    },
+    {
+        "id": "8825091d1c6dd1d1",
+        "type": "api-call-service",
+        "z": "294841a2de373763",
+        "g": "67ac8caff26d51b4",
+        "name": "Publish pv_limiter/version (retained)",
+        "server": "176d29a.6f648d6",
+        "version": 7,
+        "debugenabled": false,
+        "action": "mqtt.publish",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [],
+        "labelId": [],
+        "data": "payload",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "blockInputOverrides": false,
+        "domain": "mqtt",
+        "service": "publish",
+        "x": 630,
+        "y": 1440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "176d29a.6f648d6",
+        "type": "server",
+        "name": "HA System",
+        "addon": true,
+        "rejectUnauthorizedCerts": true,
+        "ha_boolean": [],
+        "connectionDelay": false,
+        "cacheJson": false,
+        "heartbeat": false,
+        "heartbeatInterval": "",
+        "statusSeparator": "",
+        "enableGlobalContextStore": false
+    },
+    {
+        "id": "3d0745813bdb0409",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-home-assistant-websocket": "0.80.3"
+        }
+    }
+]
