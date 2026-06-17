@@ -170,5 +170,6 @@ sensor in `pv_limiter_control.yaml`) that drives PV2 auto-detection.
 1. [`dashboard.yaml`](https://github.com/coderubbere/PV-Limiter/blob/main/home%20assistant/dashboard.yaml)
 
 ## PV Modbus TCP yaml
+These 2 modbus files are for SMA Sunnyboy inverters. In case of another inverter type the yaml files have to be tailored for that type.
 1. ['modbus_tcp_pv1.yaml'](https://github.com/coderubbere/PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv1.yaml)
 2. ['modbus_tcp_pv2.yaml'](https://github.com/coderubbere/PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv2.yaml)
