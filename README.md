@@ -7,7 +7,7 @@ Based on the core electricity price and grid power usage it controls the inverte
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-3DDC84?logo=home-assistant&logoColor=#03A9F4)](https://www.home-assistant.io/) 
 [![Node-RED](https://img.shields.io/badge/Node--RED-Flow-FF4A00?logo=node-red&logoColor=)](https://nodered.org/) 
 
-# PV Limiter — Flow Documentation (v1.0)
+# PV Limiter — Flow Documentation (v1.1)
 
 > Version history / change log lives in the tab's **Info** panel (double-click the tab name). This node is the detailed, canonical how-it-works reference.
 
@@ -129,7 +129,12 @@ sensor.pv_limiter_log* writes it to HA — publishing both a JSON `entries`
 attribute and a ready-to-render **Markdown table** (`markdown` attribute) for
 the dashboard card. An *On deploy: seed log* inject feeds *Build startup event*
 so a `startup` entry is written on every deploy, and a tab-wide *Catch all
-errors* routes runtime errors into the same logger.
+errors* routes runtime errors into the same logger via *Filter transient HA
+drops* — a guard that collapses repeated HA WebSocket dropouts
+(`NoConnectionError` / `Connection lost`) into a **single log row per 60 s
+window** (showing a live suppressed-count on its node status) while letting
+genuine errors pass through untouched, so a brief reconnect no longer spams the
+log.
 
 ---
 
@@ -158,3 +163,11 @@ sensor in `pv_limiter_control.yaml`) that drives PV2 auto-detection.
 9. `cfg_threshold_high`
 10. `pv_log_buffer`
 11. `pv2_present` (true when the PV2 package is detected)
+12. `ha_conn_err_window` {start,count} — rate-limit state for *Filter transient HA drops*
+
+## Dashboad yaml
+1. [`dashboard.yaml`](https://github.com/coderubbere/PV-Limiter/blob/main/home%20assistant/dashboard.yaml)
+
+## PV Modbus TCP yaml
+1. ['modbus_tcp_pv1.yaml'](https://github.com/coderubbere/PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv1.yaml)
+2. ['modbus_tcp_pv2.yaml'](https://github.com/coderubbere/PV-Limiter/blob/main/home%20assistant/packages/modbus_tcp_pv2.yaml)
