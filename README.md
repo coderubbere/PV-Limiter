@@ -11,13 +11,14 @@ Based on the core electricity price and grid power usage it controls the inverte
 
 > Version history / change log lives in the tab's **Info** panel (double-click the tab name). This node is the detailed, canonical how-it-works reference.
 
-This flow throttles one or two PV inverters (`number.pv1_power_limit_slider`
-and, when detected, `number.pv2_power_limit_slider`, 0–100 %) based on the
-**current electricity price** and, in the normal-price band, on **live grid (P1) power** and
-**battery state-of-charge (SoC)**. The goal: export nothing (or charge the
-battery) when power is cheap, run flat-out when power is expensive, and in the
-normal-price band trim the limiter on battery SoC first and the grid deadband
-second the rest of the time.
+This flow throttles one or two PV inverters based on the 
+- **current electricity price**, 
+- **live grid (P1) power**
+- **battery state-of-charge (SoC)**. 
+
+The goal: export nothing (or charge the battery) when power is cheap, run flat-out when 
+power is expensive, and in the normal-price band trim the limiter on battery SoC first
+and the grid deadband second the rest of the time.
 
 ## Big picture
 
@@ -33,7 +34,7 @@ second inverter package is not installed.
 
 Three price branches:
 - **Low** (price < threshold_low) → both PVs to **0 %** + battery strategy
-  **Charge**, loop stopped.
+- **Charge**, loop stopped.
 - **High** (price ≥ threshold_high) → both PVs to **100 %**, loop stopped.
 - **Normal** (in between) → arm the **P1 balance loop**.
 
